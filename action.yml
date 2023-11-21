@@ -34,6 +34,7 @@ runs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
+      shell: bash
     - name: Run Check broken paths
       if:  ${{ inputs.command == 'check-broken-paths' }}
       run: |
@@ -41,6 +42,7 @@ runs:
         echo "BROKEN_PATHS<<EOF" >> $GITHUB_ENV
         echo "$BROKEN_PATHS" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
+      shell: bash
 
     - name: Run Check paths tracking
       if:  ${{ inputs.command == 'check-paths-tracking' }}
@@ -49,6 +51,7 @@ runs:
         echo "PATHS_TRACKING<<EOF" >> $GITHUB_ENV
         echo "$PATHS_TRACKING" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
+      shell: bash
 
     - name: Run Check URLs tracking
       if:  ${{ inputs.command == 'check-urls-tracking' }}
@@ -57,6 +60,7 @@ runs:
         echo "URLS_TRACKING<<EOF" >> $GITHUB_ENV
         echo "$URLS_TRACKING" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
+      shell: bash
 
     - name: Run Check URLs Country Locale
       if:  ${{ inputs.command == 'check-urls-locale' }}
@@ -65,8 +69,10 @@ runs:
         echo "URLS_LOCALE<<EOF" >> $GITHUB_ENV
         echo "$URLS_LOCALE" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
+      shell: bash
 
    - name: Update workflow run status
-      id: update-status
-      if:  ${{  env.BROKEN_PATHS != '' ||  env.PATHS_TRACKING != '' || env.URLS_TRACKING != '' ||  env.URLS_LOCALE != ''}}
-      run: echo "::set-output name=isValid::1"
+     id: update-status
+     if:  ${{  env.BROKEN_PATHS != '' ||  env.PATHS_TRACKING != '' || env.URLS_TRACKING != '' ||  env.URLS_LOCALE != ''}}
+     run: echo "::set-output name=isValid::1"
+     shell: bash
