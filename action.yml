@@ -74,5 +74,7 @@ runs:
    - name: Update workflow run status
      id: update-status
      if:  ${{  env.BROKEN_PATHS != '' ||  env.PATHS_TRACKING != '' || env.URLS_TRACKING != '' ||  env.URLS_LOCALE != ''}}
+     env:
+        GH_TOKEN: ${{ inputs.github-token }}
      run: echo "::set-output name=isValid::1"
      shell: bash
