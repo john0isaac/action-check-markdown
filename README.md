@@ -1,2 +1,2 @@
-# action-validate-pr-markdown GitHub Action
+# action-check-markdown GitHub Action
 Validate .md and .ipynb files for writing standard.
