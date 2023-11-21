@@ -41,10 +41,6 @@ runs:
         echo "BROKEN_PATHS<<EOF" >> $GITHUB_ENV
         echo "$BROKEN_PATHS" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
-    - name: Update workflow run status
-      id: update-status
-      if:  ${{ inputs.command == 'check-broken-paths'  && env.BROKEN_PATHS != '' }}
-      run: echo "::set-output name=isValid::1"
 
     - name: Run Check paths tracking
       if:  ${{ inputs.command == 'check-paths-tracking' }}
@@ -53,10 +49,6 @@ runs:
         echo "PATHS_TRACKING<<EOF" >> $GITHUB_ENV
         echo "$PATHS_TRACKING" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
-    - name: Update workflow run status
-      id: update-status
-      if:  ${{ inputs.command == 'check-paths-tracking'  && env.PATHS_TRACKING != '' }}
-      run: echo "::set-output name=isValid::1"
 
     - name: Run Check URLs tracking
       if:  ${{ inputs.command == 'check-urls-tracking' }}
@@ -65,10 +57,6 @@ runs:
         echo "URLS_TRACKING<<EOF" >> $GITHUB_ENV
         echo "$URLS_TRACKING" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
-    - name: Update workflow run status
-      id: update-status
-      if:  ${{ inputs.command == 'check-urls-tracking' && env.URLS_TRACKING != '' }}
-      run: echo "::set-output name=isValid::1"
 
     - name: Run Check URLs Country Locale
       if:  ${{ inputs.command == 'check-urls-locale' }}
@@ -77,7 +65,8 @@ runs:
         echo "URLS_LOCALE<<EOF" >> $GITHUB_ENV
         echo "$URLS_LOCALE" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
-    - name: Update workflow run status
+
+   - name: Update workflow run status
       id: update-status
-      if:  ${{ inputs.command == 'check-urls-locale'  && env.URLS_LOCALE != '' }}
+      if:  ${{  env.BROKEN_PATHS != '' ||  env.PATHS_TRACKING != '' || env.URLS_TRACKING != '' ||  env.URLS_LOCALE != ''}}
       run: echo "::set-output name=isValid::1"
