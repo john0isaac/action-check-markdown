@@ -1,2 +1,38 @@
 # action-check-markdown GitHub Action
-Validate .md and .ipynb files for writing standard.
+
+An action that runs [markdown-checker](https://github.com/john0isaac/markdown-checker) on PRs and stores the found issues in the GitHub environment.
+
+## Workflow setup
+
+**Required input:**
+
+- `command`: function that runs `markdown-checker` on the module you want to analyse. Available options are `check-broken-paths`, `check-paths-tracking`, `check-urls-tracking`, and `check-urls-locale`.
+- `directory`: directory to run the function on. for example, `./`.
+- `github-token`: for example, `${{secrets.GITHUB_TOKEN}}`.
+
+It is necessary to include the following permissions in your job. See the example of a workflow setup below.
+
+```(yaml)
+permissions:
+  pull-requests: read
+  contents: read
+```
+
+**Example:**
+
+```(yaml)
+jobs:
+  check-broken-paths:
+    [...]
+    permissions:
+      pull-requests: read
+      contents: read
+    steps:
+    - uses: actions/checkout@v3
+    [...]
+    - uses: john0isaac/action-check-markdown@v1.0.0
+      with: 
+        github-token: ${{secrets.GITHUB_TOKEN}}
+        command: check-broken-paths
+        directory: ./
+```
