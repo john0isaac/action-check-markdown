@@ -34,7 +34,7 @@ jobs:
     - uses: john0isaac/action-check-markdown@v1.0.1
       with: 
         github-token: ${{secrets.GITHUB_TOKEN}}
-        command: check-broken-paths
+        command: check_broken_paths
         directory: ./
         guide-url: 'https://github.com/john0isaac/action-check-markdown/blob/main/CONTRIBUTING.md'
 ```
