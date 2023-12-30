@@ -6,7 +6,7 @@ An action that runs [markdown-checker](https://github.com/john0isaac/markdown-ch
 
 **Required input:**
 
-- `command`: function that runs `markdown-checker` on the module you want to analyze. Available options are `check-broken-paths`, `check-paths-tracking`, `check-urls-tracking`, and `check-urls-locale`.
+- `command`: function that runs `markdown-checker` on the module you want to analyze. Available options are `check_broken_paths`, `check_paths_tracking`, `check_urls_tracking`, and `check_urls_locale`.
 - `directory`: directory to run the function on. for example, `./`.
 - `guide-url`: contribution guide full URL. for example, `https://github.com/john0isaac/action-check-markdown/blob/main/CONTRIBUTING.md`.
 - `github-token`: for example, `${{secrets.GITHUB_TOKEN}}`.
