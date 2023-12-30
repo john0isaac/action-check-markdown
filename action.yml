@@ -14,15 +14,14 @@ inputs:
     description: The directory that contains .md and .ipynb files.
     required: true
     default: ./
+  guide-url:
+    description: The contribution guide full URL.
+    required: true
+    default: 'https://github.com/john0isaac/action-check-markdown/blob/main/CONTRIBUTING.md'
   github-token:
     description: GitHub token
     required: true
     default: ''
-
-outputs:
-  is-valid:
-    description: "Validation run status"
-    value: ${{ steps.update-status.outputs.isValid }}
 
 runs:
   using: "composite"
@@ -36,44 +35,22 @@ runs:
         python -m pip install --upgrade pip
         python -m pip install markdown-checker
       shell: bash
-    - name: Run Check broken paths
-      if:  ${{ inputs.command == 'check-broken-paths' }}
+    - name: Run markdown-checker
       run: |
-        BROKEN_PATHS=$(markdown-checker --dir ${{ inputs.directory }} --func 'check_broken_paths')
-        echo "BROKEN_PATHS<<EOF" >> $GITHUB_ENV
-        echo "$BROKEN_PATHS" >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
-      shell: bash
+        markdown-checker --dir ${{ env.directory }} --func ${{ env.command }} --guide-url ${{ env.guide-url }}
 
-    - name: Run Check paths tracking
-      if:  ${{ inputs.command == 'check-paths-tracking' }}
-      run: |
-        PATHS_TRACKING=$(markdown-checker --dir ${{ inputs.directory }} --func 'check_paths_tracking')
-        echo "PATHS_TRACKING<<EOF" >> $GITHUB_ENV
-        echo "$PATHS_TRACKING" >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
+    - name: Set job summary
+      if: ${{ always() &&  hashFiles('./comment.md') != '' }}
       shell: bash
+      run: cat ./comment.md >> $GITHUB_STEP_SUMMARY
 
-    - name: Run Check URLs tracking
-      if:  ${{ inputs.command == 'check-urls-tracking' }}
-      run: |
-        URLS_TRACKING=$(markdown-checker --dir ${{ inputs.directory }} --func 'check_urls_tracking')
-        echo "URLS_TRACKING<<EOF" >> $GITHUB_ENV
-        echo "$URLS_TRACKING" >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
+    - name: Post comment
+      if: ${{ always() &&  hashFiles('./comment.md') != '' }}
       shell: bash
-
-    - name: Run Check URLs Country Locale
-      if:  ${{ inputs.command == 'check-urls-locale' }}
-      run: |
-        URLS_LOCALE=$(markdown-checker --dir ${{ inputs.directory }} --func 'check_urls_locale')
-        echo "URLS_LOCALE<<EOF" >> $GITHUB_ENV
-        echo "$URLS_LOCALE" >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
-      shell: bash
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: gh pr comment ${{ github.event.pull_request.html_url }} -F ./comment.md
 
     - name: Update workflow run status
-      id: update-status
-      if:  ${{  env.BROKEN_PATHS != '' ||  env.PATHS_TRACKING != '' || env.URLS_TRACKING != '' ||  env.URLS_LOCALE != ''}}
-      run: echo "::set-output name=isValid::1"
-      shell: bash
+      if: ${{ always() &&  hashFiles('./comment.md') != '' }}
+      run: exit 1
