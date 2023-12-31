@@ -1,6 +1,5 @@
 <!--
 > We're eager to add your tutorial to this repository as soon as possible, but we need all samples to follow the same structure. 
-> To make sure we process it as soon as possible, make sure to follow [these instructions](https://github.com/leestott/microsoft-cloud-pr/blob/main/CONTRIBUTING.md).
 > _(DELETE THIS PARAGRAPH AFTER READING)_
 -->
 
