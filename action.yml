@@ -38,6 +38,7 @@ runs:
     - name: Run markdown-checker
       run: |
         markdown-checker --dir ${{ env.directory }} --func ${{ env.command }} --guide-url ${{ env.guide-url }}
+      shell: bash
 
     - name: Set job summary
       if: ${{ always() &&  hashFiles('./comment.md') != '' }}
