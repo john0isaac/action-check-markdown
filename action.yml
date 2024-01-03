@@ -49,7 +49,7 @@ runs:
       if: ${{ always() &&  hashFiles('./comment.md') != '' }}
       shell: bash
       env:
-        GH_TOKEN: ${{ input.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ inputs.GITHUB_TOKEN }}
       run: gh pr comment ${{ github.event.pull_request.html_url }} -F ./comment.md
 
     - name: Update workflow run status
