@@ -54,4 +54,5 @@ runs:
 
     - name: Update workflow run status
       if: ${{ always() &&  hashFiles('./comment.md') != '' }}
+      shell: bash
       run: exit 1
