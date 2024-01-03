@@ -37,7 +37,7 @@ runs:
       shell: bash
     - name: Run markdown-checker
       run: |
-        markdown-checker --dir ${{ env.directory }} --func ${{ env.command }} --guide-url ${{ env.guide-url }}
+        markdown-checker --dir ${{ inputs.directory }} --func ${{ inputs.command }} --guide-url ${{ inputs.guide-url }}
       shell: bash
 
     - name: Set job summary
