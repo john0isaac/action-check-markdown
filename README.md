@@ -29,7 +29,7 @@ jobs:
       pull-requests: write
       contents: read
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     [...]
     - uses: john0isaac/action-check-markdown@v1.0.6
       with: 
