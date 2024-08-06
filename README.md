@@ -31,7 +31,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     [...]
-    - uses: john0isaac/action-check-markdown@v1.0.6
+    - uses: john0isaac/action-check-markdown@v1.1.0
       with: 
         github-token: ${{secrets.GITHUB_TOKEN}}
         command: check_broken_paths
