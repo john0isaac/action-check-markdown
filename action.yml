@@ -53,7 +53,7 @@ runs:
       if: ${{ always() && hashFiles(format('./{0}.md', env.OUTPUT_FILE_NAME)) != '' }}
       shell: bash
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ inputs.github-token }}
       run: gh pr comment ${{ github.event.pull_request.html_url }} -F ./${{ env.OUTPUT_FILE_NAME }}.md
 
     - name: Update workflow run status
