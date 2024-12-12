@@ -35,24 +35,28 @@ runs:
         python -m pip install --upgrade pip
         python -m pip install markdown-checker
       shell: bash
+
+    - name: Generate Random File Name
+      run: echo "OUTPUT_FILE_NAME=$(echo $RANDOM$RANDOM)" >> $GITHUB_ENV
+
     - name: Run markdown-checker
       run: |
-        markdown-checker --dir ${{ inputs.directory }} --func ${{ inputs.command }} --guide-url ${{ inputs.guide-url }}
+        markdown-checker --dir ${{ inputs.directory }} --func ${{ inputs.command }} --guide-url ${{ inputs.guide-url }} --output-file-name ${{ env.OUTPUT_FILE_NAME }}
       shell: bash
 
     - name: Set job summary
-      if: ${{ always() &&  hashFiles('./comment.md') != '' }}
+      if: ${{ always() && hashFiles(format('./{0}.md', env.OUTPUT_FILE_NAME)) != '' }}
       shell: bash
-      run: cat ./comment.md >> $GITHUB_STEP_SUMMARY
+      run: cat ./${{ env.OUTPUT_FILE_NAME }}.md >> $GITHUB_STEP_SUMMARY
 
     - name: Post comment
-      if: ${{ always() &&  hashFiles('./comment.md') != '' }}
+      if: ${{ always() && hashFiles(format('./{0}.md', env.OUTPUT_FILE_NAME)) != '' }}
       shell: bash
       env:
-        GH_TOKEN: ${{ inputs.github-token }}
-      run: gh pr comment ${{ github.event.pull_request.html_url }} -F ./comment.md
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: gh pr comment ${{ github.event.pull_request.html_url }} -F ./${{ env.OUTPUT_FILE_NAME }}.md
 
     - name: Update workflow run status
-      if: ${{ always() &&  hashFiles('./comment.md') != '' }}
+      if: ${{ always() && hashFiles(format('./{0}.md', env.OUTPUT_FILE_NAME)) != '' }}
       shell: bash
       run: exit 1
