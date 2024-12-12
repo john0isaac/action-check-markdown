@@ -38,6 +38,7 @@ runs:
 
     - name: Generate Random File Name
       run: echo "OUTPUT_FILE_NAME=$(echo $RANDOM$RANDOM)" >> $GITHUB_ENV
+      shell: bash
 
     - name: Run markdown-checker
       run: |
