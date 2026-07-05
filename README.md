@@ -156,6 +156,12 @@ file types are checked (default `.md,.ipynb`):
   substrings from URL-based checks (`check_broken_urls`,
   `check_urls_tracking`, `check_urls_locale`).
 
+Because `skip-files` is left unset by default, setting it to `''` has no
+effect - it's treated the same as not setting it at all, so the tool
+default (or `pyproject.toml`, if set there) still applies. To check files
+that are skipped by default, pass a replacement list that omits them
+(e.g. `skip-files: 'CODE_OF_CONDUCT.md'` to stop skipping `SECURITY.md`).
+
 ```yaml
 - uses: john0isaac/action-check-markdown@v1.3.0
   with:

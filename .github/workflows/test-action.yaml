@@ -160,14 +160,14 @@ jobs:
           directory: ./test-fixtures/skip-files
           github-token: ${{ github.token }}
 
-      - name: Run action with skip-files cleared (expect failure)
+      - name: Run action with skip-files overridden to exclude SECURITY.md (expect failure)
         id: run-action
         continue-on-error: true
         uses: ./
         with:
           command: check_broken_paths
           directory: ./test-fixtures/skip-files
-          skip-files: ''
+          skip-files: 'CODE_OF_CONDUCT.md'
           report-format: console
           github-token: ${{ github.token }}
 
