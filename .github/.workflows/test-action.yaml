@@ -1,0 +1,363 @@
+name: Test Action
+
+on:
+  pull_request:
+    paths: ["action.yml", ".github/.workflows/test-action.yaml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-action-passes:
+    name: Passes on a valid markdown file
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Create fixture with a valid relative link
+        run: |
+          mkdir -p test-fixtures/passing
+          cat > test-fixtures/passing/README.md <<'EOF'
+          # Passing fixture
+
+          This links to [itself](./README.md), which exists.
+          EOF
+
+      - name: Run action (expect success)
+        uses: ./
+        with:
+          command: check_broken_paths
+          directory: ./test-fixtures/passing
+          github-token: ${{ github.token }}
+
+  test-action-fails:
+    name: Fails on a broken markdown link
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Create fixture with a broken relative link
+        run: |
+          mkdir -p test-fixtures/failing
+          cat > test-fixtures/failing/README.md <<'EOF'
+          # Failing fixture
+
+          This links to [a file that does not exist](./missing-file.md).
+          EOF
+
+      - name: Run action (expect failure)
+        id: run-action
+        continue-on-error: true
+        uses: ./
+        with:
+          command: check_broken_paths
+          directory: ./test-fixtures/failing
+          github-token: ${{ github.token }}
+
+      - name: Assert the action failed as expected
+        run: |
+          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
+            echo "Expected the action to fail on a broken path, but it reported: ${{ steps.run-action.outcome }}"
+            exit 1
+          fi
+          echo "Action correctly failed on a broken path."
+
+  test-action-custom-extensions:
+    name: Honors the extensions input
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Create fixture with a broken link in a non-default extension
+        run: |
+          mkdir -p test-fixtures/extensions
+          cat > test-fixtures/extensions/data.txt <<'EOF'
+          # Data
+
+          This links to [a missing file](./missing.md).
+          EOF
+
+      - name: Run action with default extensions (expect success)
+        uses: ./
+        with:
+          command: check_broken_paths
+          directory: ./test-fixtures/extensions
+          github-token: ${{ github.token }}
+
+      - name: Run action with .txt included (expect failure)
+        id: run-action
+        continue-on-error: true
+        uses: ./
+        with:
+          command: check_broken_paths
+          directory: ./test-fixtures/extensions
+          extensions: '.md,.txt'
+          github-token: ${{ github.token }}
+
+      - name: Assert the action failed as expected
+        run: |
+          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
+            echo "Expected the action to fail once .txt files are checked, but it reported: ${{ steps.run-action.outcome }}"
+            exit 1
+          fi
+          echo "Action correctly checked the .txt file once included via extensions."
+
+  test-action-skip-files:
+    name: Honors the skip-files input
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Create fixture with a broken link in a default skip-file
+        run: |
+          mkdir -p test-fixtures/skip-files
+          cat > test-fixtures/skip-files/SECURITY.md <<'EOF'
+          # Security
+
+          This links to [a missing file](./missing.md).
+          EOF
+
+      - name: Run action with default skip-files (expect success)
+        uses: ./
+        with:
+          command: check_broken_paths
+          directory: ./test-fixtures/skip-files
+          github-token: ${{ github.token }}
+
+      - name: Run action with skip-files cleared (expect failure)
+        id: run-action
+        continue-on-error: true
+        uses: ./
+        with:
+          command: check_broken_paths
+          directory: ./test-fixtures/skip-files
+          skip-files: ''
+          report-format: console
+          github-token: ${{ github.token }}
+
+      - name: Assert the action failed as expected
+        run: |
+          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
+            echo "Expected the action to fail once SECURITY.md is no longer skipped, but it reported: ${{ steps.run-action.outcome }}"
+            exit 1
+          fi
+          echo "Action correctly checked SECURITY.md once skip-files was cleared."
+
+  test-action-paths-tracking:
+    name: Runs check_paths_tracking with the json report format
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Create fixture with a relative link missing a tracking id
+        run: |
+          mkdir -p test-fixtures/paths-tracking
+          cat > test-fixtures/paths-tracking/README.md <<'EOF'
+          # Docs
+
+          This links to [a guide](./guide.md) without a tracking id.
+          EOF
+
+      - name: Run action (expect failure)
+        id: run-action
+        continue-on-error: true
+        uses: ./
+        with:
+          command: check_paths_tracking
+          directory: ./test-fixtures/paths-tracking
+          report-format: json
+          github-token: ${{ github.token }}
+
+      - name: Assert the action failed as expected
+        run: |
+          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
+            echo "Expected the action to fail on a path missing a tracking id, but it reported: ${{ steps.run-action.outcome }}"
+            exit 1
+          fi
+          echo "Action correctly failed on a path missing a tracking id."
+
+  test-action-tracking-domains:
+    name: Honors tracking-domains and skip-domains
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Create fixture with a URL missing a tracking id
+        run: |
+          mkdir -p test-fixtures/tracking-domains
+          cat > test-fixtures/tracking-domains/README.md <<'EOF'
+          # Docs
+
+          See [our docs](https://example.com/docs) for more.
+          EOF
+
+      - name: Run action with example.com as a tracking domain (expect failure)
+        id: run-action
+        continue-on-error: true
+        uses: ./
+        with:
+          command: check_urls_tracking
+          directory: ./test-fixtures/tracking-domains
+          tracking-domains: 'example.com'
+          github-token: ${{ github.token }}
+
+      - name: Assert the action failed as expected
+        run: |
+          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
+            echo "Expected the action to fail on a tracked domain missing a tracking id, but it reported: ${{ steps.run-action.outcome }}"
+            exit 1
+          fi
+          echo "Action correctly failed on a tracked domain missing a tracking id."
+
+      - name: Run action with example.com also skipped (expect success)
+        uses: ./
+        with:
+          command: check_urls_tracking
+          directory: ./test-fixtures/tracking-domains
+          tracking-domains: 'example.com'
+          skip-domains: 'example.com'
+          github-token: ${{ github.token }}
+
+  test-action-urls-locale:
+    name: Honors skip-urls-containing on check_urls_locale
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Create fixture with a locale URL
+        run: |
+          mkdir -p test-fixtures/urls-locale
+          cat > test-fixtures/urls-locale/README.md <<'EOF'
+          # Docs
+
+          See [localized docs](https://example.com/en-us/docs) for more.
+          EOF
+
+      - name: Run action (expect failure)
+        id: run-action
+        continue-on-error: true
+        uses: ./
+        with:
+          command: check_urls_locale
+          directory: ./test-fixtures/urls-locale
+          github-token: ${{ github.token }}
+
+      - name: Assert the action failed as expected
+        run: |
+          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
+            echo "Expected the action to fail on a locale URL, but it reported: ${{ steps.run-action.outcome }}"
+            exit 1
+          fi
+          echo "Action correctly failed on a locale URL."
+
+      - name: Run action with the locale URL skipped (expect success)
+        uses: ./
+        with:
+          command: check_urls_locale
+          directory: ./test-fixtures/urls-locale
+          skip-urls-containing: '/en-us/'
+          github-token: ${{ github.token }}
+
+  test-action-broken-urls-options:
+    name: Passes custom check_broken_urls request options through
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Create fixture with a reliable URL
+        run: |
+          mkdir -p test-fixtures/broken-urls-options
+          cat > test-fixtures/broken-urls-options/README.md <<'EOF'
+          # Docs
+
+          See [GitHub](https://github.com) for more.
+          EOF
+
+      - name: Run action with custom request options (expect success)
+        uses: ./
+        with:
+          command: check_broken_urls
+          directory: ./test-fixtures/broken-urls-options
+          timeout: '5'
+          retries: '1'
+          retry-on-429: false
+          fallback-retry-delay: '10'
+          max-workers: '4'
+          per-host-delay: '0.1'
+          github-token: ${{ github.token }}
+
+  test-action-config-and-isolated:
+    name: Honors config and isolated
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Create fixture with a config-skipped broken link
+        run: |
+          mkdir -p test-fixtures/config
+          cat > test-fixtures/config/CFGSKIP.md <<'EOF'
+          # Config Skip
+
+          This links to [a missing file](./missing.md).
+          EOF
+          cat > test-fixtures/config/pyproject.toml <<'EOF'
+          [tool.markdown-checker]
+          skip-files = ["CFGSKIP.md"]
+          EOF
+
+      - name: Run action with the fixture config (expect success)
+        uses: ./
+        with:
+          command: check_broken_paths
+          directory: ./test-fixtures/config
+          config: ./test-fixtures/config/pyproject.toml
+          github-token: ${{ github.token }}
+
+      - name: Run action isolated, ignoring the config (expect failure)
+        id: run-action
+        continue-on-error: true
+        uses: ./
+        with:
+          command: check_broken_paths
+          directory: ./test-fixtures/config
+          isolated: true
+          github-token: ${{ github.token }}
+
+      - name: Assert the action failed as expected
+        run: |
+          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
+            echo "Expected the action to fail once --isolated ignores the config's skip-files, but it reported: ${{ steps.run-action.outcome }}"
+            exit 1
+          fi
+          echo "Action correctly ignored the config's skip-files when isolated."

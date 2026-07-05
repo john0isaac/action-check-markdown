@@ -1,4 +1,4 @@
-## Contribution
+# Contribution
 
 How to [contribute to the project](https://docs.github.com/en/get-started/quickstart/contributing-to-projects)?
 

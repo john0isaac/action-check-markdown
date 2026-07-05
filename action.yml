@@ -8,8 +8,15 @@ branding:
 inputs:
   command:
     description: The function to run and validate.
+    type: choice
     required: true
-    default: check-broken-paths
+    default: check_broken_paths
+    options:
+    - check_broken_paths
+    - check_broken_urls
+    - check_paths_tracking
+    - check_urls_tracking
+    - check_urls_locale
   directory:
     description: The directory that contains .md and .ipynb files.
     required: true
@@ -22,6 +29,70 @@ inputs:
     description: GitHub token
     required: true
     default: ''
+  extensions:
+    description: Comma-separated file extensions to check.
+    required: false
+    default: '.md,.ipynb'
+  tracking-domains:
+    description: Comma-separated hostnames that must carry a wt.mc_id tracking parameter. Only affects check_urls_tracking.
+    required: false
+    default: 'github.com,microsoft.com,visualstudio.com,aka.ms,azure.com'
+  skip-files:
+    description: Comma-separated file names to exclude from checking.
+    required: false
+    default: 'CODE_OF_CONDUCT.md,SECURITY.md'
+  skip-domains:
+    description: Comma-separated domains to exclude from URL checks. Only affects check_broken_urls and check_urls_locale.
+    required: false
+    default: ''
+  skip-urls-containing:
+    description: Comma-separated URL substrings to exclude from URL checks. Only affects check_broken_urls and check_urls_locale.
+    required: false
+    default: ''
+  timeout:
+    description: Per-request timeout in seconds for URL checks (0-50).
+    required: false
+    default: '20'
+  retries:
+    description: Number of attempts before a URL is reported as broken (0-10).
+    required: false
+    default: '3'
+  retry-on-429:
+    description: Whether a 429 response is reported immediately as rate_limited instead of retried with exponential backoff.
+    type: boolean
+    required: false
+    default: 'true'
+  fallback-retry-delay:
+    description: Seconds reported as the retry delay when a 429 carries no Retry-After header (0-300).
+    required: false
+    default: '30'
+  max-workers:
+    description: Maximum number of concurrent URL-check worker threads. Defaults to the number of available CPUs when unset.
+    required: false
+    default: ''
+  per-host-delay:
+    description: Minimum delay in seconds enforced between two requests to the same host (0.0-10.0).
+    required: false
+    default: '0.5'
+  report-format:
+    description: Report format written when error-level issues are found.
+    type: choice
+    required: false
+    default: markdown
+    options:
+    - console
+    - github-annotations
+    - json
+    - markdown
+  config:
+    description: Path to a TOML file to read [tool.markdown-checker] configuration from, instead of discovering pyproject.toml.
+    required: false
+    default: ''
+  isolated:
+    description: Ignore pyproject.toml configuration entirely for this run.
+    type: boolean
+    required: false
+    default: 'false'
 
 runs:
   using: "composite"
@@ -29,7 +100,7 @@ runs:
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10'
+        python-version: '3.11'
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
@@ -37,27 +108,74 @@ runs:
       shell: bash
 
     - name: Generate Random File Name
-      run: echo "OUTPUT_FILE_NAME=$(echo $RANDOM$RANDOM)" >> $GITHUB_ENV
       shell: bash
+      run: |
+        echo "OUTPUT_FILE_NAME=$(echo $RANDOM$RANDOM)" >> $GITHUB_ENV
+        case "${{ inputs.report-format }}" in
+          markdown) echo "OUTPUT_FILE_EXT=.md" >> $GITHUB_ENV ;;
+          json) echo "OUTPUT_FILE_EXT=.json" >> $GITHUB_ENV ;;
+          *) echo "OUTPUT_FILE_EXT=.txt" >> $GITHUB_ENV ;;
+        esac
 
     - name: Run markdown-checker
-      run: |
-        markdown-checker --dir ${{ inputs.directory }} --func ${{ inputs.command }} --guide-url ${{ inputs.guide-url }} --output-file-name ${{ env.OUTPUT_FILE_NAME }}
       shell: bash
+      run: |
+        args=(
+          --dir "${{ inputs.directory }}"
+          --func "${{ inputs.command }}"
+          --guide-url "${{ inputs.guide-url }}"
+          --output-file-name "${{ env.OUTPUT_FILE_NAME }}"
+          --extensions "${{ inputs.extensions }}"
+          --tracking-domains "${{ inputs.tracking-domains }}"
+          --skip-files "${{ inputs.skip-files }}"
+          --timeout "${{ inputs.timeout }}"
+          --retries "${{ inputs.retries }}"
+          --fallback-retry-delay "${{ inputs.fallback-retry-delay }}"
+          --per-host-delay "${{ inputs.per-host-delay }}"
+          --report-format "${{ inputs.report-format }}"
+        )
+
+        if [ "${{ inputs.retry-on-429 }}" = "true" ]; then
+          args+=(--retry-on-429)
+        else
+          args+=(--no-retry-on-429)
+        fi
+
+        if [ -n "${{ inputs.skip-domains }}" ]; then
+          args+=(--skip-domains "${{ inputs.skip-domains }}")
+        fi
+
+        if [ -n "${{ inputs.skip-urls-containing }}" ]; then
+          args+=(--skip-urls-containing "${{ inputs.skip-urls-containing }}")
+        fi
+
+        if [ -n "${{ inputs.max-workers }}" ]; then
+          args+=(--max-workers "${{ inputs.max-workers }}")
+        fi
+
+        if [ -n "${{ inputs.config }}" ]; then
+          args+=(--config "${{ inputs.config }}")
+        fi
+
+        if [ "${{ inputs.isolated }}" = "true" ]; then
+          args+=(--isolated)
+        fi
+
+        markdown-checker "${args[@]}"
 
     - name: Set job summary
-      if: ${{ always() && hashFiles(format('./{0}.md', env.OUTPUT_FILE_NAME)) != '' }}
+      if: ${{ always() && hashFiles(format('./{0}{1}', env.OUTPUT_FILE_NAME, env.OUTPUT_FILE_EXT)) != '' }}
       shell: bash
-      run: cat ./${{ env.OUTPUT_FILE_NAME }}.md >> $GITHUB_STEP_SUMMARY
+      run: cat ./${{ env.OUTPUT_FILE_NAME }}${{ env.OUTPUT_FILE_EXT }} >> $GITHUB_STEP_SUMMARY
 
     - name: Post comment
-      if: ${{ always() && hashFiles(format('./{0}.md', env.OUTPUT_FILE_NAME)) != '' }}
+      if: ${{ always() && hashFiles(format('./{0}{1}', env.OUTPUT_FILE_NAME, env.OUTPUT_FILE_EXT)) != '' }}
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
-      run: gh pr comment ${{ github.event.pull_request.html_url }} -F ./${{ env.OUTPUT_FILE_NAME }}.md
+      run: gh pr comment ${{ github.event.pull_request.html_url }} -F ./${{ env.OUTPUT_FILE_NAME }}${{ env.OUTPUT_FILE_EXT }}
 
     - name: Update workflow run status
-      if: ${{ always() && hashFiles(format('./{0}.md', env.OUTPUT_FILE_NAME)) != '' }}
+      if: ${{ always() && hashFiles(format('./{0}{1}', env.OUTPUT_FILE_NAME, env.OUTPUT_FILE_EXT)) != '' }}
       shell: bash
       run: exit 1

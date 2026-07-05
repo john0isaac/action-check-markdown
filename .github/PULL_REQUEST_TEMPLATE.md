@@ -1,30 +1,23 @@
 <!--
-> We're eager to add your tutorial to this repository as soon as possible, but we need all samples to follow the same structure. 
-> _(DELETE THIS PARAGRAPH AFTER READING)_
--->
+Before opening a PR, open a ticket describing the issue or feature the
+PR will address. An issue is not required for fixing typos in
+documentation, or other simple non-code changes.
 
-|        Q        |                    A                    |
-| --------------- | --------------------------------------- |
-| Bug fix?        | no - yes?                               |
-| New feature?    | no - yes?                               |
-| New tutorial?   | no - yes?                               |
-| Related issues? | fixes #X, partially #Y, mentioned in #Z |
-
-## What's in this Pull Request?
-
-<!--
-> Please describe the changes in this PR. Sample description or details around bugs that are being fixed.
->
-> _(DELETE THIS PARAGRAPH AFTER READING)_
+Replace this comment with a description of the change. Describe how it
+addresses the linked ticket.
 -->
 
 <!--
-## Submitter Guidance (DELETE AFTER READING)
-> 
-> *Please update this PR information accordingly.*
->
-> *Pull requests that do not follow this template will be automatically rejected.*
-> 
-> *Please target your PR to the `main` branch.*
-> _(DELETE THIS SECTION AFTER READING)_
+Link to relevant issues or previous PRs, one per line. Use "fixes" to
+automatically close an issue.
+
+fixes #<issue number>
+-->
+
+<!--
+Ensure each step in the contributing guide is complete, especially the following:
+
+- Add tests that demonstrate the correct behavior of the change. Tests
+  should fail without the change.
+- Add or update relevant docs, in the docs folder and in code.
 -->

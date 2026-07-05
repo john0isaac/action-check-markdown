@@ -1,0 +1,55 @@
+[project]
+name = "action-check-markdown"
+description = "A GitHub Action to check markdown files for broken links and other issues."
+version = "0.1.0"
+requires-python = ">=3.12"
+
+[dependency-groups]
+dev = [
+    "tox",
+    "tox-uv",
+]
+gha-update = [
+    "gha-update",
+]
+pre-commit = [
+    "pre-commit",
+    "pre-commit-uv",
+]
+
+[tool.uv]
+package = false
+default-groups = ["dev", "pre-commit",]
+
+[tool.tox]
+env_list = [
+    "style",
+]
+
+[tool.tox.env.style]
+description = "run all pre-commit hooks on all files"
+dependency_groups = ["pre-commit"]
+skip_install = true
+commands = [["pre-commit", "run", "--all-files"]]
+
+[tool.tox.env.update-actions]
+description = "update GitHub Actions pins"
+labels = ["update"]
+dependency_groups = ["gha-update"]
+skip_install = true
+commands = [["gha-update"]]
+
+[tool.tox.env.update-pre_commit]
+description = "update pre-commit pins"
+labels = ["update"]
+dependency_groups = ["pre-commit"]
+skip_install = true
+commands = [["pre-commit", "autoupdate", "--freeze", "-j4"]]
+
+[tool.tox.env.update-requirements]
+description = "update uv lock"
+labels = ["update"]
+dependency_groups = []
+no_default_groups = true
+skip_install = true
+commands = [["uv", "lock", {replace = "posargs", default = ["-U"], extend = true}]]
