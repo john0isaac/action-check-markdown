@@ -185,23 +185,88 @@ runs:
 
         markdown-checker "${args[@]}"
 
+    - name: Check for report file
+      id: report
+      if: ${{ always() }}
+      shell: bash
+      env:
+        REPORT_FILE: ${{ format('{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext) }}
+      run: |
+        if [ -f "./$REPORT_FILE" ]; then
+          echo "found=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "found=false" >> "$GITHUB_OUTPUT"
+        fi
+
     - name: Set job summary
-      if: ${{ always() && hashFiles(format('./{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext)) != '' }}
+      if: ${{ always() && steps.report.outputs.found == 'true' }}
       shell: bash
       env:
         REPORT_FILE: ${{ format('{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext) }}
       run: cat "./$REPORT_FILE" >> "$GITHUB_STEP_SUMMARY"
 
-    - name: Post comment
-      if: ${{ always() && github.event_name == 'pull_request' && hashFiles(format('./{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext)) != '' }}
+    - name: Note PR comment skipped on fork
+      if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+      shell: bash
+      run: |
+        echo "::notice::Skipping PR comment sync: pull requests from forks get a read-only GITHUB_TOKEN, so this action cannot post or update comments here. The job summary and exit status above still reflect the check result."
+
+    - name: Sync PR comment
+      if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
-        PR_URL: ${{ github.event.pull_request.html_url }}
+        REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        COMMAND: ${{ inputs.command }}
+        REPORT_FOUND: ${{ steps.report.outputs.found }}
         REPORT_FILE: ${{ format('{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext) }}
-      run: gh pr comment "$PR_URL" -F "./$REPORT_FILE"
+      run: |
+        marker="<!-- action-check-markdown:${COMMAND} -->"
+
+        # Find this check's existing comment (if any) by its hidden marker.
+        comment_id="$(gh api "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+          --paginate \
+          --jq ".[] | select(.body | startswith(\"${marker}\")) | .id" \
+          | head -n 1)"
+
+        if [ "$REPORT_FOUND" = "true" ]; then
+          # Issues found: create or update the report comment.
+          printf '%s\n\n' "$marker" > comment-body.md
+          cat "./$REPORT_FILE" >> comment-body.md
+        elif [ -n "$comment_id" ]; then
+          # No issues, but a previous failure comment exists: mark it resolved,
+          # with the same heading style as the report templates.
+          case "$COMMAND" in
+            check_broken_paths) title="Check Broken Paths" ;;
+            check_broken_urls) title="Check Broken URLs" ;;
+            check_paths_tracking) title="Check Missing Tracking from Paths" ;;
+            check_urls_tracking) title="Check Missing Tracking from URLs" ;;
+            check_urls_locale) title="Check Country Locale in URLs" ;;
+            *) title="Check Markdown" ;;
+          esac
+          printf '%s\n# %s\n\n✅ No issues found. All previously reported issues have been resolved.\n' \
+            "$marker" "$title" > comment-body.md
+        else
+          # No issues and no previous comment: keep the PR uncluttered.
+          echo "No issues and no existing comment; skipping."
+          exit 0
+        fi
+
+        if [ -n "$comment_id" ]; then
+          gh api "repos/${REPO}/issues/comments/${comment_id}" --jq .body > existing-body.md
+          if cmp -s comment-body.md existing-body.md; then
+            echo "Comment already up to date; skipping update."
+            exit 0
+          fi
+          gh api --method PATCH "repos/${REPO}/issues/comments/${comment_id}" \
+            -F body=@comment-body.md > /dev/null
+        else
+          gh api --method POST "repos/${REPO}/issues/${PR_NUMBER}/comments" \
+            -F body=@comment-body.md > /dev/null
+        fi
 
     - name: Update workflow run status
-      if: ${{ always() && hashFiles(format('./{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext)) != '' }}
+      if: ${{ always() && steps.report.outputs.found == 'true' }}
       shell: bash
       run: exit 1

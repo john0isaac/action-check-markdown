@@ -403,3 +403,164 @@ jobs:
             exit 1
           fi
           echo "Action correctly ignored the config's skip-domains when isolated."
+
+  test-action-sticky-comment-ends-success:
+    name: "Sticky comment demo: failure -> failure (edited) -> success (edited)"
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Create fixture with a broken relative link
+        run: |
+          mkdir -p test-fixtures/sticky-success
+          cat > test-fixtures/sticky-success/README.md <<'EOF'
+          # Sticky comment demo (ends success)
+
+          This links to [a file that does not exist](./missing-file.md).
+          EOF
+
+      - name: Run action (expect failure, creates the sticky comment)
+        id: run-1
+        continue-on-error: true
+        uses: ./
+        with:
+          command: check_broken_paths
+          directory: ./test-fixtures/sticky-success
+          github-token: ${{ github.token }}
+
+      - name: Assert the first run failed as expected
+        env:
+          RUN_OUTCOME: ${{ steps.run-1.outcome }}
+        run: |
+          if [ "$RUN_OUTCOME" != "failure" ]; then
+            echo "Expected the first run to fail, but it reported: $RUN_OUTCOME"
+            exit 1
+          fi
+
+      - name: Break the fixture differently
+        run: |
+          cat > test-fixtures/sticky-success/README.md <<'EOF'
+          # Sticky comment demo (ends success)
+
+          This links to [two missing files](./still-missing.md) and
+          [another one](./also-missing.md).
+          EOF
+
+      - name: Run action again (expect failure, edits the same comment)
+        id: run-2
+        continue-on-error: true
+        uses: ./
+        with:
+          command: check_broken_paths
+          directory: ./test-fixtures/sticky-success
+          github-token: ${{ github.token }}
+
+      - name: Assert the second run failed as expected
+        env:
+          RUN_OUTCOME: ${{ steps.run-2.outcome }}
+        run: |
+          if [ "$RUN_OUTCOME" != "failure" ]; then
+            echo "Expected the second run to fail, but it reported: $RUN_OUTCOME"
+            exit 1
+          fi
+
+      - name: Fix the fixture
+        run: |
+          cat > test-fixtures/sticky-success/README.md <<'EOF'
+          # Sticky comment demo (ends success)
+
+          This links to [itself](./README.md), which exists.
+          EOF
+
+      - name: Run action once more (expect success, edits the comment to resolved)
+        uses: ./
+        with:
+          command: check_broken_paths
+          directory: ./test-fixtures/sticky-success
+          github-token: ${{ github.token }}
+
+  test-action-sticky-comment-ends-failure:
+    name: "Sticky comment demo: failure -> success (edited) -> failure (edited)"
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Create fixture with a broken URL
+        run: |
+          mkdir -p test-fixtures/sticky-failure
+          cat > test-fixtures/sticky-failure/README.md <<'EOF'
+          # Sticky comment demo (ends failure)
+
+          See [this broken link](https://example.invalid/does-not-exist) for more.
+          EOF
+
+      - name: Run action (expect failure, creates the sticky comment)
+        id: run-1
+        continue-on-error: true
+        uses: ./
+        with:
+          command: check_broken_urls
+          directory: ./test-fixtures/sticky-failure
+          github-token: ${{ github.token }}
+
+      - name: Assert the first run failed as expected
+        env:
+          RUN_OUTCOME: ${{ steps.run-1.outcome }}
+        run: |
+          if [ "$RUN_OUTCOME" != "failure" ]; then
+            echo "Expected the first run to fail, but it reported: $RUN_OUTCOME"
+            exit 1
+          fi
+
+      - name: Fix the fixture
+        run: |
+          cat > test-fixtures/sticky-failure/README.md <<'EOF'
+          # Sticky comment demo (ends failure)
+
+          See [GitHub](https://github.com) for more.
+          EOF
+
+      - name: Run action again (expect success, edits the comment to resolved)
+        uses: ./
+        with:
+          command: check_broken_urls
+          directory: ./test-fixtures/sticky-failure
+          github-token: ${{ github.token }}
+
+      - name: Break the fixture again
+        run: |
+          cat > test-fixtures/sticky-failure/README.md <<'EOF'
+          # Sticky comment demo (ends failure)
+
+          See [this broken link again](https://example.invalid/still-broken) for more.
+          EOF
+
+      - name: Run action once more (expect failure, edits the comment back to a report)
+        id: run-2
+        continue-on-error: true
+        uses: ./
+        with:
+          command: check_broken_urls
+          directory: ./test-fixtures/sticky-failure
+          github-token: ${{ github.token }}
+
+      - name: Assert the final run failed as expected
+        env:
+          RUN_OUTCOME: ${{ steps.run-2.outcome }}
+        run: |
+          if [ "$RUN_OUTCOME" != "failure" ]; then
+            echo "Expected the final run to fail, but it reported: $RUN_OUTCOME"
+            exit 1
+          fi
