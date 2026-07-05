@@ -23,6 +23,9 @@ jobs:
   test-action-passes:
     name: Passes on a valid markdown file
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -46,8 +49,10 @@ jobs:
 
   test-action-fails:
     name: Fails on a broken markdown link
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -72,17 +77,21 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Assert the action failed as expected
+        env:
+          RUN_OUTCOME: ${{ steps.run-action.outcome }}
         run: |
-          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
-            echo "Expected the action to fail on a broken path, but it reported: ${{ steps.run-action.outcome }}"
+          if [ "$RUN_OUTCOME" != "failure" ]; then
+            echo "Expected the action to fail on a broken path, but it reported: $RUN_OUTCOME"
             exit 1
           fi
           echo "Action correctly failed on a broken path."
 
   test-action-custom-extensions:
     name: Honors the extensions input
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -115,17 +124,21 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Assert the action failed as expected
+        env:
+          RUN_OUTCOME: ${{ steps.run-action.outcome }}
         run: |
-          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
-            echo "Expected the action to fail once .txt files are checked, but it reported: ${{ steps.run-action.outcome }}"
+          if [ "$RUN_OUTCOME" != "failure" ]; then
+            echo "Expected the action to fail once .txt files are checked, but it reported: $RUN_OUTCOME"
             exit 1
           fi
           echo "Action correctly checked the .txt file once included via extensions."
 
   test-action-skip-files:
     name: Honors the skip-files input
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -159,17 +172,21 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Assert the action failed as expected
+        env:
+          RUN_OUTCOME: ${{ steps.run-action.outcome }}
         run: |
-          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
-            echo "Expected the action to fail once SECURITY.md is no longer skipped, but it reported: ${{ steps.run-action.outcome }}"
+          if [ "$RUN_OUTCOME" != "failure" ]; then
+            echo "Expected the action to fail once SECURITY.md is no longer skipped, but it reported: $RUN_OUTCOME"
             exit 1
           fi
           echo "Action correctly checked SECURITY.md once skip-files was cleared."
 
   test-action-paths-tracking:
     name: Runs check_paths_tracking with the json report format
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -195,17 +212,21 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Assert the action failed as expected
+        env:
+          RUN_OUTCOME: ${{ steps.run-action.outcome }}
         run: |
-          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
-            echo "Expected the action to fail on a path missing a tracking id, but it reported: ${{ steps.run-action.outcome }}"
+          if [ "$RUN_OUTCOME" != "failure" ]; then
+            echo "Expected the action to fail on a path missing a tracking id, but it reported: $RUN_OUTCOME"
             exit 1
           fi
           echo "Action correctly failed on a path missing a tracking id."
 
   test-action-tracking-domains:
     name: Honors tracking-domains and skip-domains
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -231,9 +252,11 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Assert the action failed as expected
+        env:
+          RUN_OUTCOME: ${{ steps.run-action.outcome }}
         run: |
-          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
-            echo "Expected the action to fail on a tracked domain missing a tracking id, but it reported: ${{ steps.run-action.outcome }}"
+          if [ "$RUN_OUTCOME" != "failure" ]; then
+            echo "Expected the action to fail on a tracked domain missing a tracking id, but it reported: $RUN_OUTCOME"
             exit 1
           fi
           echo "Action correctly failed on a tracked domain missing a tracking id."
@@ -249,8 +272,10 @@ jobs:
 
   test-action-urls-locale:
     name: Honors skip-urls-containing on check_urls_locale
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -275,9 +300,11 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Assert the action failed as expected
+        env:
+          RUN_OUTCOME: ${{ steps.run-action.outcome }}
         run: |
-          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
-            echo "Expected the action to fail on a locale URL, but it reported: ${{ steps.run-action.outcome }}"
+          if [ "$RUN_OUTCOME" != "failure" ]; then
+            echo "Expected the action to fail on a locale URL, but it reported: $RUN_OUTCOME"
             exit 1
           fi
           echo "Action correctly failed on a locale URL."
@@ -293,6 +320,9 @@ jobs:
   test-action-broken-urls-options:
     name: Passes custom check_broken_urls request options through
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -322,8 +352,10 @@ jobs:
 
   test-action-config-and-isolated:
     name: Honors config and isolated
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -361,9 +393,11 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: Assert the action failed as expected
+        env:
+          RUN_OUTCOME: ${{ steps.run-action.outcome }}
         run: |
-          if [ "${{ steps.run-action.outcome }}" != "failure" ]; then
-            echo "Expected the action to fail once --isolated ignores the config's skip-files, but it reported: ${{ steps.run-action.outcome }}"
+          if [ "$RUN_OUTCOME" != "failure" ]; then
+            echo "Expected the action to fail once --isolated ignores the config's skip-files, but it reported: $RUN_OUTCOME"
             exit 1
           fi
           echo "Action correctly ignored the config's skip-files when isolated."

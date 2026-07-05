@@ -98,7 +98,7 @@ runs:
   using: "composite"
   steps:
     - name: Setup Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
       with:
         python-version: '3.11'
     - name: Install Dependencies
@@ -108,74 +108,100 @@ runs:
       shell: bash
 
     - name: Generate Random File Name
+      id: report-file
       shell: bash
+      env:
+        REPORT_FORMAT: ${{ inputs.report-format }}
       run: |
-        echo "OUTPUT_FILE_NAME=$(echo $RANDOM$RANDOM)" >> $GITHUB_ENV
-        case "${{ inputs.report-format }}" in
-          markdown) echo "OUTPUT_FILE_EXT=.md" >> $GITHUB_ENV ;;
-          json) echo "OUTPUT_FILE_EXT=.json" >> $GITHUB_ENV ;;
-          *) echo "OUTPUT_FILE_EXT=.txt" >> $GITHUB_ENV ;;
+        echo "name=$(echo $RANDOM$RANDOM)" >> "$GITHUB_OUTPUT"
+        case "$REPORT_FORMAT" in
+          markdown) echo "ext=.md" >> "$GITHUB_OUTPUT" ;;
+          json) echo "ext=.json" >> "$GITHUB_OUTPUT" ;;
+          *) echo "ext=.txt" >> "$GITHUB_OUTPUT" ;;
         esac
 
     - name: Run markdown-checker
       shell: bash
+      env:
+        INPUT_DIRECTORY: ${{ inputs.directory }}
+        INPUT_COMMAND: ${{ inputs.command }}
+        INPUT_GUIDE_URL: ${{ inputs.guide-url }}
+        INPUT_EXTENSIONS: ${{ inputs.extensions }}
+        INPUT_TRACKING_DOMAINS: ${{ inputs.tracking-domains }}
+        INPUT_SKIP_FILES: ${{ inputs.skip-files }}
+        INPUT_TIMEOUT: ${{ inputs.timeout }}
+        INPUT_RETRIES: ${{ inputs.retries }}
+        INPUT_RETRY_ON_429: ${{ inputs.retry-on-429 }}
+        INPUT_FALLBACK_RETRY_DELAY: ${{ inputs.fallback-retry-delay }}
+        INPUT_MAX_WORKERS: ${{ inputs.max-workers }}
+        INPUT_PER_HOST_DELAY: ${{ inputs.per-host-delay }}
+        INPUT_REPORT_FORMAT: ${{ inputs.report-format }}
+        INPUT_SKIP_DOMAINS: ${{ inputs.skip-domains }}
+        INPUT_SKIP_URLS_CONTAINING: ${{ inputs.skip-urls-containing }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_ISOLATED: ${{ inputs.isolated }}
+        OUTPUT_FILE_NAME: ${{ steps.report-file.outputs.name }}
       run: |
         args=(
-          --dir "${{ inputs.directory }}"
-          --func "${{ inputs.command }}"
-          --guide-url "${{ inputs.guide-url }}"
-          --output-file-name "${{ env.OUTPUT_FILE_NAME }}"
-          --extensions "${{ inputs.extensions }}"
-          --tracking-domains "${{ inputs.tracking-domains }}"
-          --skip-files "${{ inputs.skip-files }}"
-          --timeout "${{ inputs.timeout }}"
-          --retries "${{ inputs.retries }}"
-          --fallback-retry-delay "${{ inputs.fallback-retry-delay }}"
-          --per-host-delay "${{ inputs.per-host-delay }}"
-          --report-format "${{ inputs.report-format }}"
+          --dir "$INPUT_DIRECTORY"
+          --func "$INPUT_COMMAND"
+          --guide-url "$INPUT_GUIDE_URL"
+          --output-file-name "$OUTPUT_FILE_NAME"
+          --extensions "$INPUT_EXTENSIONS"
+          --tracking-domains "$INPUT_TRACKING_DOMAINS"
+          --skip-files "$INPUT_SKIP_FILES"
+          --timeout "$INPUT_TIMEOUT"
+          --retries "$INPUT_RETRIES"
+          --fallback-retry-delay "$INPUT_FALLBACK_RETRY_DELAY"
+          --per-host-delay "$INPUT_PER_HOST_DELAY"
+          --report-format "$INPUT_REPORT_FORMAT"
         )
 
-        if [ "${{ inputs.retry-on-429 }}" = "true" ]; then
+        if [ "$INPUT_RETRY_ON_429" = "true" ]; then
           args+=(--retry-on-429)
         else
           args+=(--no-retry-on-429)
         fi
 
-        if [ -n "${{ inputs.skip-domains }}" ]; then
-          args+=(--skip-domains "${{ inputs.skip-domains }}")
+        if [ -n "$INPUT_SKIP_DOMAINS" ]; then
+          args+=(--skip-domains "$INPUT_SKIP_DOMAINS")
         fi
 
-        if [ -n "${{ inputs.skip-urls-containing }}" ]; then
-          args+=(--skip-urls-containing "${{ inputs.skip-urls-containing }}")
+        if [ -n "$INPUT_SKIP_URLS_CONTAINING" ]; then
+          args+=(--skip-urls-containing "$INPUT_SKIP_URLS_CONTAINING")
         fi
 
-        if [ -n "${{ inputs.max-workers }}" ]; then
-          args+=(--max-workers "${{ inputs.max-workers }}")
+        if [ -n "$INPUT_MAX_WORKERS" ]; then
+          args+=(--max-workers "$INPUT_MAX_WORKERS")
         fi
 
-        if [ -n "${{ inputs.config }}" ]; then
-          args+=(--config "${{ inputs.config }}")
+        if [ -n "$INPUT_CONFIG" ]; then
+          args+=(--config "$INPUT_CONFIG")
         fi
 
-        if [ "${{ inputs.isolated }}" = "true" ]; then
+        if [ "$INPUT_ISOLATED" = "true" ]; then
           args+=(--isolated)
         fi
 
         markdown-checker "${args[@]}"
 
     - name: Set job summary
-      if: ${{ always() && hashFiles(format('./{0}{1}', env.OUTPUT_FILE_NAME, env.OUTPUT_FILE_EXT)) != '' }}
+      if: ${{ always() && hashFiles(format('./{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext)) != '' }}
       shell: bash
-      run: cat ./${{ env.OUTPUT_FILE_NAME }}${{ env.OUTPUT_FILE_EXT }} >> $GITHUB_STEP_SUMMARY
+      env:
+        REPORT_FILE: ${{ format('{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext) }}
+      run: cat "./$REPORT_FILE" >> "$GITHUB_STEP_SUMMARY"
 
     - name: Post comment
-      if: ${{ always() && hashFiles(format('./{0}{1}', env.OUTPUT_FILE_NAME, env.OUTPUT_FILE_EXT)) != '' }}
+      if: ${{ always() && github.event_name == 'pull_request' && hashFiles(format('./{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext)) != '' }}
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
-      run: gh pr comment ${{ github.event.pull_request.html_url }} -F ./${{ env.OUTPUT_FILE_NAME }}${{ env.OUTPUT_FILE_EXT }}
+        PR_URL: ${{ github.event.pull_request.html_url }}
+        REPORT_FILE: ${{ format('{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext) }}
+      run: gh pr comment "$PR_URL" -F "./$REPORT_FILE"
 
     - name: Update workflow run status
-      if: ${{ always() && hashFiles(format('./{0}{1}', env.OUTPUT_FILE_NAME, env.OUTPUT_FILE_EXT)) != '' }}
+      if: ${{ always() && hashFiles(format('./{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext)) != '' }}
       shell: bash
       run: exit 1
