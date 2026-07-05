@@ -1,13 +1,19 @@
 name: Test Action
 
 on:
+  push:
+    branches: [ main, dev ]
+    paths:
+      - 'action.yml'
+      - '.github/workflows/test-action.yaml'
   pull_request:
-    paths: ["action.yml", ".github/.workflows/test-action.yaml"]
+    paths:
+      - 'action.yml'
+      - '.github/workflows/test-action.yaml'
   workflow_dispatch:
 
 permissions:
   contents: read
-  pull-requests: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
