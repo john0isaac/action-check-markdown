@@ -160,14 +160,14 @@ jobs:
           directory: ./test-fixtures/skip-files
           github-token: ${{ github.token }}
 
-      - name: Run action with skip-files cleared (expect failure)
+      - name: Run action with skip-files overridden to exclude SECURITY.md (expect failure)
         id: run-action
         continue-on-error: true
         uses: ./
         with:
           command: check_broken_paths
           directory: ./test-fixtures/skip-files
-          skip-files: ''
+          skip-files: 'CODE_OF_CONDUCT.md'
           report-format: console
           github-token: ${{ github.token }}
 
@@ -403,6 +403,61 @@ jobs:
             exit 1
           fi
           echo "Action correctly ignored the config's skip-domains when isolated."
+
+  test-action-pyproject-precedence:
+    name: Prefers pyproject values over tool defaults for unset inputs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Create fixture with a URL missing a tracking id and a pyproject config
+        run: |
+          mkdir -p test-fixtures/pyproject-precedence
+          cat > test-fixtures/pyproject-precedence/README.md <<'EOF'
+          # Docs
+
+          See [our docs](https://example.com/docs) for more.
+          EOF
+          cat > test-fixtures/pyproject-precedence/pyproject.toml <<'EOF'
+          [tool.markdown-checker]
+          tracking-domains = ["example.com"]
+          report-format = "json"
+          EOF
+
+      - name: Run action with tracking-domains unset (expect failure from pyproject value)
+        id: run-action
+        continue-on-error: true
+        uses: ./
+        with:
+          command: check_urls_tracking
+          directory: ./test-fixtures/pyproject-precedence
+          config: ./test-fixtures/pyproject-precedence/pyproject.toml
+          github-token: ${{ github.token }}
+
+      - name: Assert the pyproject tracking-domains and report-format were used
+        env:
+          RUN_OUTCOME: ${{ steps.run-action.outcome }}
+        run: |
+          if [ "$RUN_OUTCOME" != "failure" ]; then
+            echo "Expected the action to fail using the pyproject tracking-domains, but it reported: $RUN_OUTCOME"
+            exit 1
+          fi
+          echo "Action correctly used tracking-domains from pyproject.toml instead of the tool default."
+
+      - name: Run action with tracking-domains set explicitly (expect success, input overrides pyproject)
+        uses: ./
+        with:
+          command: check_urls_tracking
+          directory: ./test-fixtures/pyproject-precedence
+          tracking-domains: 'other.example.org'
+          config: ./test-fixtures/pyproject-precedence/pyproject.toml
+          github-token: ${{ github.token }}
+
 
   test-action-sticky-comment-ends-success:
     name: "Sticky comment demo: failure -> failure (edited) -> success (edited)"
