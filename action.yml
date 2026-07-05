@@ -22,25 +22,25 @@ inputs:
     required: true
     default: ./
   guide-url:
-    description: The contribution guide full URL.
-    required: true
-    default: 'https://github.com/john0isaac/action-check-markdown/blob/main/CONTRIBUTING.md'
+    description: The contribution guide full URL, linked in the report. When unset, uses guide-url from pyproject.toml if present, otherwise no guide link is included.
+    required: false
+    default: ''
   github-token:
     description: GitHub token
     required: true
     default: ''
   extensions:
-    description: Comma-separated file extensions to check.
+    description: Comma-separated file extensions to check. When unset, uses pyproject.toml if present, otherwise '.md,.ipynb'.
     required: false
-    default: '.md,.ipynb'
+    default: ''
   tracking-domains:
-    description: Comma-separated hostnames that must carry a wt.mc_id tracking parameter. Only affects check_urls_tracking.
+    description: Comma-separated hostnames that must carry a wt.mc_id tracking parameter. Only affects check_urls_tracking. When unset, uses pyproject.toml if present, otherwise 'github.com,microsoft.com,visualstudio.com,aka.ms,azure.com'.
     required: false
-    default: 'github.com,microsoft.com,visualstudio.com,aka.ms,azure.com'
+    default: ''
   skip-files:
-    description: Comma-separated file names to exclude from checking.
+    description: Comma-separated file names to exclude from checking. When unset, uses pyproject.toml if present, otherwise 'CODE_OF_CONDUCT.md,SECURITY.md'.
     required: false
-    default: 'CODE_OF_CONDUCT.md,SECURITY.md'
+    default: ''
   skip-domains:
     description: Comma-separated domains to exclude from URL checks. Only affects check_broken_urls and check_urls_locale.
     required: false
@@ -50,35 +50,34 @@ inputs:
     required: false
     default: ''
   timeout:
-    description: Per-request timeout in seconds for URL checks (0-50).
+    description: Per-request timeout in seconds for URL checks (0-50). When unset, uses pyproject.toml if present, otherwise 20.
     required: false
-    default: '20'
+    default: ''
   retries:
-    description: Number of attempts before a URL is reported as broken (0-10).
+    description: Number of attempts before a URL is reported as broken (0-10). When unset, uses pyproject.toml if present, otherwise 3.
     required: false
-    default: '3'
+    default: ''
   retry-on-429:
-    description: Whether a 429 response is reported immediately as rate_limited instead of retried with exponential backoff.
-    type: boolean
+    description: Whether a 429 response is retried honouring Retry-After instead of reported immediately as rate_limited (true/false). When unset, uses pyproject.toml if present, otherwise true.
     required: false
-    default: 'true'
+    default: ''
   fallback-retry-delay:
-    description: Seconds reported as the retry delay when a 429 carries no Retry-After header (0-300).
+    description: Seconds reported as the retry delay when a 429 carries no Retry-After header (0-300). When unset, uses pyproject.toml if present, otherwise 30.
     required: false
-    default: '30'
+    default: ''
   max-workers:
-    description: Maximum number of concurrent URL-check worker threads. Defaults to the number of available CPUs when unset.
+    description: Maximum number of concurrent URL-check worker threads. When unset, uses pyproject.toml if present, otherwise the number of available CPUs.
     required: false
     default: ''
   per-host-delay:
-    description: Minimum delay in seconds enforced between two requests to the same host (0.0-10.0).
+    description: Minimum delay in seconds enforced between two requests to the same host (0.0-10.0). When unset, uses pyproject.toml if present, otherwise 0.5.
     required: false
-    default: '0.5'
+    default: ''
   report-format:
-    description: Report format written when error-level issues are found.
+    description: Report format written when error-level issues are found. When unset, uses pyproject.toml if present, otherwise markdown.
     type: choice
     required: false
-    default: markdown
+    default: ''
     options:
     - console
     - github-annotations
@@ -110,15 +109,7 @@ runs:
     - name: Generate Random File Name
       id: report-file
       shell: bash
-      env:
-        REPORT_FORMAT: ${{ inputs.report-format }}
-      run: |
-        echo "name=$(echo $RANDOM$RANDOM)" >> "$GITHUB_OUTPUT"
-        case "$REPORT_FORMAT" in
-          markdown) echo "ext=.md" >> "$GITHUB_OUTPUT" ;;
-          json) echo "ext=.json" >> "$GITHUB_OUTPUT" ;;
-          *) echo "ext=.txt" >> "$GITHUB_OUTPUT" ;;
-        esac
+      run: echo "name=$(echo $RANDOM$RANDOM)" >> "$GITHUB_OUTPUT"
 
     - name: Run markdown-checker
       shell: bash
@@ -145,22 +136,49 @@ runs:
         args=(
           --dir "$INPUT_DIRECTORY"
           --func "$INPUT_COMMAND"
-          --guide-url "$INPUT_GUIDE_URL"
           --output-file-name "$OUTPUT_FILE_NAME"
-          --extensions "$INPUT_EXTENSIONS"
-          --tracking-domains "$INPUT_TRACKING_DOMAINS"
-          --skip-files "$INPUT_SKIP_FILES"
-          --timeout "$INPUT_TIMEOUT"
-          --retries "$INPUT_RETRIES"
-          --fallback-retry-delay "$INPUT_FALLBACK_RETRY_DELAY"
-          --per-host-delay "$INPUT_PER_HOST_DELAY"
-          --report-format "$INPUT_REPORT_FORMAT"
         )
+
+        if [ -n "$INPUT_GUIDE_URL" ]; then
+          args+=(--guide-url "$INPUT_GUIDE_URL")
+        fi
+
+        if [ -n "$INPUT_EXTENSIONS" ]; then
+          args+=(--extensions "$INPUT_EXTENSIONS")
+        fi
+
+        if [ -n "$INPUT_TRACKING_DOMAINS" ]; then
+          args+=(--tracking-domains "$INPUT_TRACKING_DOMAINS")
+        fi
+
+        if [ -n "$INPUT_SKIP_FILES" ]; then
+          args+=(--skip-files "$INPUT_SKIP_FILES")
+        fi
+
+        if [ -n "$INPUT_TIMEOUT" ]; then
+          args+=(--timeout "$INPUT_TIMEOUT")
+        fi
+
+        if [ -n "$INPUT_RETRIES" ]; then
+          args+=(--retries "$INPUT_RETRIES")
+        fi
 
         if [ "$INPUT_RETRY_ON_429" = "true" ]; then
           args+=(--retry-on-429)
-        else
+        elif [ "$INPUT_RETRY_ON_429" = "false" ]; then
           args+=(--no-retry-on-429)
+        fi
+
+        if [ -n "$INPUT_FALLBACK_RETRY_DELAY" ]; then
+          args+=(--fallback-retry-delay "$INPUT_FALLBACK_RETRY_DELAY")
+        fi
+
+        if [ -n "$INPUT_PER_HOST_DELAY" ]; then
+          args+=(--per-host-delay "$INPUT_PER_HOST_DELAY")
+        fi
+
+        if [ -n "$INPUT_REPORT_FORMAT" ]; then
+          args+=(--report-format "$INPUT_REPORT_FORMAT")
         fi
 
         if [ -n "$INPUT_SKIP_DOMAINS" ]; then
@@ -190,19 +208,23 @@ runs:
       if: ${{ always() }}
       shell: bash
       env:
-        REPORT_FILE: ${{ format('{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext) }}
+        REPORT_NAME: ${{ steps.report-file.outputs.name }}
       run: |
-        if [ -f "./$REPORT_FILE" ]; then
-          echo "found=true" >> "$GITHUB_OUTPUT"
-        else
-          echo "found=false" >> "$GITHUB_OUTPUT"
-        fi
+        found=false
+        for ext in .md .json .txt; do
+          if [ -f "./$REPORT_NAME$ext" ]; then
+            found=true
+            echo "file=$REPORT_NAME$ext" >> "$GITHUB_OUTPUT"
+            break
+          fi
+        done
+        echo "found=$found" >> "$GITHUB_OUTPUT"
 
     - name: Set job summary
       if: ${{ always() && steps.report.outputs.found == 'true' }}
       shell: bash
       env:
-        REPORT_FILE: ${{ format('{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext) }}
+        REPORT_FILE: ${{ steps.report.outputs.file }}
       run: cat "./$REPORT_FILE" >> "$GITHUB_STEP_SUMMARY"
 
     - name: Note PR comment skipped on fork
@@ -220,7 +242,7 @@ runs:
         PR_NUMBER: ${{ github.event.pull_request.number }}
         COMMAND: ${{ inputs.command }}
         REPORT_FOUND: ${{ steps.report.outputs.found }}
-        REPORT_FILE: ${{ format('{0}{1}', steps.report-file.outputs.name, steps.report-file.outputs.ext) }}
+        REPORT_FILE: ${{ steps.report.outputs.file }}
       run: |
         marker="<!-- action-check-markdown:${COMMAND} -->"
 

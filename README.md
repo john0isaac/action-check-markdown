@@ -50,7 +50,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: john0isaac/action-check-markdown@v1.2.0
+      - uses: john0isaac/action-check-markdown@v1.3.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           command: check_broken_paths
@@ -71,7 +71,7 @@ Set `command: check_broken_urls` to flag web links that don't return a
 successful response:
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.2.0
+- uses: john0isaac/action-check-markdown@v1.3.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_broken_urls
@@ -86,7 +86,7 @@ missing a `wt.mc_id` query parameter, or `check_paths_tracking` to require
 it on every relative path link, regardless of domain:
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.2.0
+- uses: john0isaac/action-check-markdown@v1.3.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_urls_tracking
@@ -101,7 +101,7 @@ Use `check_urls_locale` to flag URLs whose path contains a language-country
 segment (e.g. `/en-us/`), which usually shouldn't be hardcoded in docs:
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.2.0
+- uses: john0isaac/action-check-markdown@v1.3.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_urls_locale
@@ -118,14 +118,14 @@ Add one step (or job) per check to run several in the same workflow:
 steps:
   - uses: actions/checkout@v4
   - name: Check broken paths
-    uses: john0isaac/action-check-markdown@v1.2.0
+    uses: john0isaac/action-check-markdown@v1.3.0
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       command: check_broken_paths
       directory: ./
       guide-url: 'https://github.com/<owner>/<repo>/blob/main/CONTRIBUTING.md'
   - name: Check broken URLs
-    uses: john0isaac/action-check-markdown@v1.2.0
+    uses: john0isaac/action-check-markdown@v1.3.0
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       command: check_broken_urls
@@ -139,7 +139,7 @@ Use `directory` to point at a subfolder, and `extensions` to restrict which
 file types are checked (default `.md,.ipynb`):
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.2.0
+- uses: john0isaac/action-check-markdown@v1.3.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_broken_paths
@@ -157,7 +157,7 @@ file types are checked (default `.md,.ipynb`):
   `check_urls_tracking`, `check_urls_locale`).
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.2.0
+- uses: john0isaac/action-check-markdown@v1.3.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_broken_urls
@@ -175,7 +175,7 @@ need to tune concurrency and retry behavior to avoid tripping host rate
 limits:
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.2.0
+- uses: john0isaac/action-check-markdown@v1.3.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_broken_urls
@@ -197,7 +197,7 @@ Instead of repeating options on every step, set them once in a
 Use `isolated: true` to ignore configuration discovery entirely for a run:
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.2.0
+- uses: john0isaac/action-check-markdown@v1.3.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_broken_paths
@@ -209,11 +209,11 @@ Use `isolated: true` to ignore configuration discovery entirely for a run:
 ### Choose a report format
 
 `report-format` controls both the console output style and the file
-written when errors are found (`markdown` by default, matching the `.md`
-extension expected by the job summary and PR comment):
+written when errors are found (`markdown` when not set here or in
+`pyproject.toml`):
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.2.0
+- uses: john0isaac/action-check-markdown@v1.3.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_broken_paths
@@ -230,22 +230,29 @@ extension expected by the job summary and PR comment):
 | --- | --- | --- | --- |
 | `command` | Yes | `check_broken_paths` | Check to run: `check_broken_paths`, `check_broken_urls`, `check_paths_tracking`, `check_urls_tracking`, `check_urls_locale`. |
 | `directory` | Yes | `./` | Directory to search recursively for matching files. |
-| `guide-url` | Yes | `https://github.com/john0isaac/action-check-markdown/blob/main/CONTRIBUTING.md` | Full URL of your contributing guide, linked in the report. |
+| `guide-url` | No | *(unset)* | Full URL of your contributing guide, linked in the report. |
 | `github-token` | Yes | `''` | GitHub token used to post the PR comment, e.g. `${{ secrets.GITHUB_TOKEN }}`. |
-| `extensions` | No | `.md,.ipynb` | Comma-separated file extensions to check. |
-| `tracking-domains` | No | `github.com,microsoft.com,visualstudio.com,aka.ms,azure.com` | Comma-separated hostnames that must carry a `wt.mc_id` parameter. Only affects `check_urls_tracking`. |
-| `skip-files` | No | `CODE_OF_CONDUCT.md,SECURITY.md` | Comma-separated file names to exclude from checking. |
-| `skip-domains` | No | `''` | Comma-separated domains to exclude from URL checks. |
-| `skip-urls-containing` | No | `''` | Comma-separated URL substrings to exclude from URL checks. |
-| `timeout` | No | `20` | Per-request timeout in seconds for URL checks (`0`-`50`). |
-| `retries` | No | `3` | Number of attempts before a URL is reported as broken (`0`-`10`). |
-| `retry-on-429` | No | `true` | Report a 429 response immediately as rate-limited instead of retrying with exponential backoff. |
-| `fallback-retry-delay` | No | `30` | Seconds reported as the retry delay when a 429 carries no `Retry-After` header (`0`-`300`). |
-| `max-workers` | No | *(auto: available CPUs)* | Maximum number of concurrent URL-check worker threads. |
-| `per-host-delay` | No | `0.5` | Minimum delay in seconds enforced between two requests to the same host (`0.0`-`10.0`). |
-| `report-format` | No | `markdown` | Report format: `console`, `github-annotations`, `json`, `markdown`. |
+| `extensions` | No | *(unset:* `.md,.ipynb`*)* | Comma-separated file extensions to check. |
+| `tracking-domains` | No | *(unset:* `github.com,microsoft.com,visualstudio.com,aka.ms,azure.com`*)* | Comma-separated hostnames that must carry a `wt.mc_id` parameter. Only affects `check_urls_tracking`. |
+| `skip-files` | No | *(unset:* `CODE_OF_CONDUCT.md,SECURITY.md`*)* | Comma-separated file names to exclude from checking. |
+| `skip-domains` | No | *(unset)* | Comma-separated domains to exclude from URL checks. |
+| `skip-urls-containing` | No | *(unset)* | Comma-separated URL substrings to exclude from URL checks. |
+| `timeout` | No | *(unset:* `20`*)* | Per-request timeout in seconds for URL checks (`0`-`50`). |
+| `retries` | No | *(unset:* `3`*)* | Number of attempts before a URL is reported as broken (`0`-`10`). |
+| `retry-on-429` | No | *(unset:* `true`*)* | Whether a 429 response is retried honouring `Retry-After` instead of reported immediately as rate-limited. |
+| `fallback-retry-delay` | No | *(unset:* `30`*)* | Seconds reported as the retry delay when a 429 carries no `Retry-After` header (`0`-`300`). |
+| `max-workers` | No | *(unset: available CPUs)* | Maximum number of concurrent URL-check worker threads. |
+| `per-host-delay` | No | *(unset:* `0.5`*)* | Minimum delay in seconds enforced between two requests to the same host (`0.0`-`10.0`). |
+| `report-format` | No | *(unset:* `markdown`*)* | Report format: `console`, `github-annotations`, `json`, `markdown`. |
 | `config` | No | `''` | Path to a TOML file to read `[tool.markdown-checker]` configuration from, instead of discovering `pyproject.toml`. |
 | `isolated` | No | `false` | Ignore `pyproject.toml` configuration discovery entirely for this run. |
+
+Inputs marked *(unset)* are not passed to the CLI unless you set them.
+For those, the effective value is resolved in this order: explicit
+workflow input, then `[tool.markdown-checker]` in `pyproject.toml` (or the
+file given by `config`), then the tool default shown after the colon. This
+means your `pyproject.toml` settings are honored unless a workflow input
+explicitly overrides them.
 
 ### Permissions
 
@@ -296,9 +303,10 @@ inline annotations that work with a read-only token.
 
 Each report format has a corresponding renderer with its own file
 extension - `.md` for `markdown`, `.json` for `json`, and `.txt` for
-`console`/`github-annotations`. The action detects this automatically so
-the job summary and PR comment steps read back the file the renderer
-actually wrote.
+`console`/`github-annotations`. The action detects which file the renderer
+actually wrote (whether the format came from an input, `pyproject.toml`,
+or the default) so the job summary and PR comment steps always read back
+the right one.
 
 ### Relationship to the markdown-checker CLI
 
