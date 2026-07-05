@@ -21,6 +21,9 @@ A GitHub Action that wraps [markdown-checker](https://github.com/john0isaac/mark
   configuration file.
 - On failure, posts the report as both a job summary and a pull request
   comment, and fails the workflow run.
+- Keeps a single sticky comment per check up to date across runs instead of
+  piling up new comments, and updates it to a success message once issues
+  are resolved.
 
 ## Tutorial: get started
 
@@ -268,10 +271,26 @@ job summary, a pull request comment, and the workflow run's exit status
 The action installs `markdown-checker` from PyPI, then invokes its CLI
 with the inputs above, always writing the report under a randomly
 generated file name so concurrent jobs don't collide. If the check finds
-error-level issues, the report is appended to `$GITHUB_STEP_SUMMARY`,
-posted as a comment on the pull request via the `gh` CLI, and the job is
-made to fail. Warning-level issues (e.g. rate-limited or unverifiable
-URLs) are reported but never fail the run.
+error-level issues, the report is appended to `$GITHUB_STEP_SUMMARY` and
+the job is made to fail. Warning-level issues (e.g. rate-limited or
+unverifiable URLs) are reported but never fail the run.
+
+On pull requests, the action also syncs the result to a single sticky
+comment via the GitHub API (`gh api`). Each comment is tagged with a
+hidden marker keyed by `command` (e.g. `check_broken_urls`), so running
+multiple checks in one workflow keeps one comment per check instead of
+them overwriting each other, and comments from unrelated workflows are
+never touched. When error-level issues are found, that comment is created
+or updated with the report; once they're resolved, the same comment is
+updated to a short success message. If no issues are found and no comment
+exists yet, nothing is posted, keeping clean pull requests uncluttered.
+
+On pull requests from forks, the default `GITHUB_TOKEN` is read-only, so
+the action skips the comment sync step with a `::notice::` explaining why,
+instead of failing on a confusing 403; the job summary and exit status
+still reflect the check result. Use `pull_request_target` (carefully) if
+you need comments on fork PRs, or `report-format: github-annotations` for
+inline annotations that work with a read-only token.
 
 ### Why `report-format` changes the output file's extension
 
