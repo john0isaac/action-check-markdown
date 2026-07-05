@@ -75,7 +75,7 @@ inputs:
     required: false
     default: '0.5'
   report-format:
-    description: Report format written when error-level issues are found.
+    description: Report format written when error-level issues are found
     type: choice
     required: false
     default: markdown
