@@ -503,7 +503,7 @@ jobs:
           cat > test-fixtures/sticky-failure/README.md <<'EOF'
           # Sticky comment demo (ends failure)
 
-          See [this broken link](https://example.invalid/does-not-exist) for more.
+          See [this broken link](https://github.com/john0isaac/action-check-markdown/this-page-does-not-exist-abc123) for more.
           EOF
 
       - name: Run action (expect failure, creates the sticky comment)
@@ -544,7 +544,7 @@ jobs:
           cat > test-fixtures/sticky-failure/README.md <<'EOF'
           # Sticky comment demo (ends failure)
 
-          See [this broken link again](https://example.invalid/still-broken) for more.
+          See [this broken link again](https://github.com/john0isaac/action-check-markdown/this-page-is-still-missing-xyz789) for more.
           EOF
 
       - name: Run action once more (expect failure, edits the comment back to a report)
