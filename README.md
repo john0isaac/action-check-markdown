@@ -82,8 +82,10 @@ successful response:
 ### Require tracking IDs on links
 
 Use `check_urls_tracking` to flag URLs on configured domains that are
-missing a `wt.mc_id` query parameter, or `check_paths_tracking` to require
-it on every relative path link, regardless of domain:
+missing a tracking query parameter (`wt.mc_id` by default), or
+`check_paths_tracking` to require it on every relative path link,
+regardless of domain. Set `tracking-param` to accept other parameters; a
+link passes if it has any of them:
 
 ```yaml
 - uses: john0isaac/action-check-markdown@v1.3.0
@@ -92,6 +94,7 @@ it on every relative path link, regardless of domain:
     command: check_urls_tracking
     directory: ./
     tracking-domains: 'github.com,microsoft.com,learn.microsoft.com'
+    tracking-param: 'wt.mc_id,utm_source'
     guide-url: 'https://github.com/<owner>/<repo>/blob/main/CONTRIBUTING.md'
 ```
 
@@ -239,9 +242,10 @@ written when errors are found (`markdown` when not set here or in
 | `guide-url` | No | *(unset)* | Full URL of your contributing guide, linked in the report. |
 | `github-token` | Yes | `''` | GitHub token used to post the PR comment, e.g. `${{ secrets.GITHUB_TOKEN }}`. |
 | `extensions` | No | *(unset:* `.md,.ipynb`*)* | Comma-separated file extensions to check. |
-| `tracking-domains` | No | *(unset:* `github.com,microsoft.com,visualstudio.com,aka.ms,azure.com`*)* | Comma-separated hostnames that must carry a `wt.mc_id` parameter. Only affects `check_urls_tracking`. |
+| `tracking-domains` | No | *(unset:* `github.com,microsoft.com,visualstudio.com,aka.ms,azure.com`*)* | Comma-separated domains (subdomains included) whose URLs must carry a tracking parameter (see `tracking-param`). Only affects `check_urls_tracking`. |
+| `tracking-param` | No | *(unset:* `wt.mc_id`*)* | Comma-separated tracking query parameter names; a link passes if it has any of them (case-insensitive). Affects `check_urls_tracking` and `check_paths_tracking`. |
 | `skip-files` | No | *(unset:* `CODE_OF_CONDUCT.md,SECURITY.md`*)* | Comma-separated file names to exclude from checking. |
-| `skip-domains` | No | *(unset)* | Comma-separated domains to exclude from URL checks. |
+| `skip-domains` | No | *(unset)* | Comma-separated domains to exclude from URL checks; a domain also matches its subdomains. |
 | `skip-urls-containing` | No | *(unset)* | Comma-separated URL substrings to exclude from URL checks. |
 | `timeout` | No | *(unset:* `20`*)* | Per-request timeout in seconds for URL checks (`0`-`50`). |
 | `retries` | No | *(unset:* `3`*)* | Number of attempts before a URL is reported as broken (`0`-`10`). |
