@@ -41,7 +41,7 @@ jobs:
           EOF
 
       - name: Run action (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/passing
@@ -70,7 +70,7 @@ jobs:
       - name: Run action (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/failing
@@ -107,7 +107,7 @@ jobs:
           EOF
 
       - name: Run action with default extensions (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/extensions
@@ -116,7 +116,7 @@ jobs:
       - name: Run action with .txt included (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/extensions
@@ -154,7 +154,7 @@ jobs:
           EOF
 
       - name: Run action with default skip-files (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/skip-files
@@ -163,7 +163,7 @@ jobs:
       - name: Run action with skip-files overridden to exclude SECURITY.md (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/skip-files
@@ -204,7 +204,7 @@ jobs:
       - name: Run action (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_paths_tracking
           directory: ./test-fixtures/paths-tracking
@@ -244,7 +244,7 @@ jobs:
       - name: Run action with example.com as a tracking domain (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_urls_tracking
           directory: ./test-fixtures/tracking-domains
@@ -262,7 +262,7 @@ jobs:
           echo "Action correctly failed on a tracked domain missing a tracking id."
 
       - name: Run action with example.com also skipped (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_urls_tracking
           directory: ./test-fixtures/tracking-domains
@@ -293,7 +293,7 @@ jobs:
       - name: Run action with the default tracking-param (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_paths_tracking
           directory: ./test-fixtures/tracking-param
@@ -310,7 +310,7 @@ jobs:
           echo "Action correctly failed when only wt.mc_id is accepted."
 
       - name: Run action accepting utm_source (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_paths_tracking
           directory: ./test-fixtures/tracking-param
@@ -340,7 +340,7 @@ jobs:
       - name: Run action (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_urls_locale
           directory: ./test-fixtures/urls-locale
@@ -357,7 +357,7 @@ jobs:
           echo "Action correctly failed on a locale URL."
 
       - name: Run action with the locale URL skipped (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_urls_locale
           directory: ./test-fixtures/urls-locale
@@ -385,7 +385,7 @@ jobs:
           EOF
 
       - name: Run action with custom request options (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_broken_urls
           directory: ./test-fixtures/broken-urls-options
@@ -422,7 +422,7 @@ jobs:
           EOF
 
       - name: Run action with the fixture config (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_urls_tracking
           directory: ./test-fixtures/config
@@ -433,7 +433,7 @@ jobs:
       - name: Run action isolated, ignoring the config (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_urls_tracking
           directory: ./test-fixtures/config
@@ -479,7 +479,7 @@ jobs:
       - name: Run action with tracking-domains unset (expect failure from pyproject value)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_urls_tracking
           directory: ./test-fixtures/pyproject-precedence
@@ -497,7 +497,7 @@ jobs:
           echo "Action correctly used tracking-domains from pyproject.toml instead of the tool default."
 
       - name: Run action with tracking-domains set explicitly (expect success, input overrides pyproject)
-        uses: ./
+        uses: $/
         with:
           command: check_urls_tracking
           directory: ./test-fixtures/pyproject-precedence
@@ -530,7 +530,7 @@ jobs:
       - name: Run action (expect failure, creates the sticky comment)
         id: run-1
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/sticky-success
@@ -557,7 +557,7 @@ jobs:
       - name: Run action again (expect failure, edits the same comment)
         id: run-2
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/sticky-success
@@ -581,7 +581,7 @@ jobs:
           EOF
 
       - name: Run action once more (expect success, edits the comment to resolved)
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/sticky-success
@@ -611,7 +611,7 @@ jobs:
       - name: Run action (expect failure, creates the sticky comment)
         id: run-1
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_urls
           directory: ./test-fixtures/sticky-failure
@@ -635,7 +635,7 @@ jobs:
           EOF
 
       - name: Run action again (expect success, edits the comment to resolved)
-        uses: ./
+        uses: $/
         with:
           command: check_broken_urls
           directory: ./test-fixtures/sticky-failure
@@ -652,7 +652,7 @@ jobs:
       - name: Run action once more (expect failure, edits the comment back to a report)
         id: run-2
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_urls
           directory: ./test-fixtures/sticky-failure
