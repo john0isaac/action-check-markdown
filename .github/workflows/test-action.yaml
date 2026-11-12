@@ -27,7 +27,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -41,7 +41,7 @@ jobs:
           EOF
 
       - name: Run action (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/passing
@@ -54,7 +54,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -70,7 +70,7 @@ jobs:
       - name: Run action (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/failing
@@ -93,7 +93,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -107,7 +107,7 @@ jobs:
           EOF
 
       - name: Run action with default extensions (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/extensions
@@ -116,7 +116,7 @@ jobs:
       - name: Run action with .txt included (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/extensions
@@ -140,7 +140,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -154,7 +154,7 @@ jobs:
           EOF
 
       - name: Run action with default skip-files (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/skip-files
@@ -163,7 +163,7 @@ jobs:
       - name: Run action with skip-files overridden to exclude SECURITY.md (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/skip-files
@@ -188,7 +188,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -204,7 +204,7 @@ jobs:
       - name: Run action (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_paths_tracking
           directory: ./test-fixtures/paths-tracking
@@ -228,7 +228,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -244,7 +244,7 @@ jobs:
       - name: Run action with example.com as a tracking domain (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_urls_tracking
           directory: ./test-fixtures/tracking-domains
@@ -262,12 +262,59 @@ jobs:
           echo "Action correctly failed on a tracked domain missing a tracking id."
 
       - name: Run action with example.com also skipped (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_urls_tracking
           directory: ./test-fixtures/tracking-domains
           tracking-domains: 'example.com'
           skip-domains: 'example.com'
+          github-token: ${{ github.token }}
+
+  test-action-tracking-param:
+    name: Honors tracking-param
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Create fixture with a relative link using a custom tracking parameter
+        run: |
+          mkdir -p test-fixtures/tracking-param
+          cat > test-fixtures/tracking-param/README.md <<'EOF'
+          # Docs
+
+          This links to [a guide](./guide.md?utm_source=docs) with a custom tracking parameter.
+          EOF
+
+      - name: Run action with the default tracking-param (expect failure)
+        id: run-action
+        continue-on-error: true
+        uses: $/
+        with:
+          command: check_paths_tracking
+          directory: ./test-fixtures/tracking-param
+          github-token: ${{ github.token }}
+
+      - name: Assert the action failed as expected
+        env:
+          RUN_OUTCOME: ${{ steps.run-action.outcome }}
+        run: |
+          if [ "$RUN_OUTCOME" != "failure" ]; then
+            echo "Expected the action to fail when only wt.mc_id is accepted, but it reported: $RUN_OUTCOME"
+            exit 1
+          fi
+          echo "Action correctly failed when only wt.mc_id is accepted."
+
+      - name: Run action accepting utm_source (expect success)
+        uses: $/
+        with:
+          command: check_paths_tracking
+          directory: ./test-fixtures/tracking-param
+          tracking-param: 'wt.mc_id,utm_source'
           github-token: ${{ github.token }}
 
   test-action-urls-locale:
@@ -277,7 +324,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -293,7 +340,7 @@ jobs:
       - name: Run action (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_urls_locale
           directory: ./test-fixtures/urls-locale
@@ -310,7 +357,7 @@ jobs:
           echo "Action correctly failed on a locale URL."
 
       - name: Run action with the locale URL skipped (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_urls_locale
           directory: ./test-fixtures/urls-locale
@@ -324,7 +371,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -338,7 +385,7 @@ jobs:
           EOF
 
       - name: Run action with custom request options (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_broken_urls
           directory: ./test-fixtures/broken-urls-options
@@ -357,7 +404,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -375,7 +422,7 @@ jobs:
           EOF
 
       - name: Run action with the fixture config (expect success)
-        uses: ./
+        uses: $/
         with:
           command: check_urls_tracking
           directory: ./test-fixtures/config
@@ -386,7 +433,7 @@ jobs:
       - name: Run action isolated, ignoring the config (expect failure)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_urls_tracking
           directory: ./test-fixtures/config
@@ -411,7 +458,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -432,7 +479,7 @@ jobs:
       - name: Run action with tracking-domains unset (expect failure from pyproject value)
         id: run-action
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_urls_tracking
           directory: ./test-fixtures/pyproject-precedence
@@ -450,7 +497,7 @@ jobs:
           echo "Action correctly used tracking-domains from pyproject.toml instead of the tool default."
 
       - name: Run action with tracking-domains set explicitly (expect success, input overrides pyproject)
-        uses: ./
+        uses: $/
         with:
           command: check_urls_tracking
           directory: ./test-fixtures/pyproject-precedence
@@ -467,7 +514,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -483,7 +530,7 @@ jobs:
       - name: Run action (expect failure, creates the sticky comment)
         id: run-1
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/sticky-success
@@ -510,7 +557,7 @@ jobs:
       - name: Run action again (expect failure, edits the same comment)
         id: run-2
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/sticky-success
@@ -534,7 +581,7 @@ jobs:
           EOF
 
       - name: Run action once more (expect success, edits the comment to resolved)
-        uses: ./
+        uses: $/
         with:
           command: check_broken_paths
           directory: ./test-fixtures/sticky-success
@@ -548,7 +595,7 @@ jobs:
       contents: read
       pull-requests: write
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -564,7 +611,7 @@ jobs:
       - name: Run action (expect failure, creates the sticky comment)
         id: run-1
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_urls
           directory: ./test-fixtures/sticky-failure
@@ -588,7 +635,7 @@ jobs:
           EOF
 
       - name: Run action again (expect success, edits the comment to resolved)
-        uses: ./
+        uses: $/
         with:
           command: check_broken_urls
           directory: ./test-fixtures/sticky-failure
@@ -605,7 +652,7 @@ jobs:
       - name: Run action once more (expect failure, edits the comment back to a report)
         id: run-2
         continue-on-error: true
-        uses: ./
+        uses: $/
         with:
           command: check_broken_urls
           directory: ./test-fixtures/sticky-failure
