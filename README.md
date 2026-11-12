@@ -50,7 +50,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: john0isaac/action-check-markdown@v1.3.0
+      - uses: john0isaac/action-check-markdown@v1.4.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           command: check_broken_paths
@@ -71,7 +71,7 @@ Set `command: check_broken_urls` to flag web links that don't return a
 successful response:
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.3.0
+- uses: john0isaac/action-check-markdown@v1.4.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_broken_urls
@@ -88,7 +88,7 @@ regardless of domain. Set `tracking-param` to accept other parameters; a
 link passes if it has any of them:
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.3.0
+- uses: john0isaac/action-check-markdown@v1.4.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_urls_tracking
@@ -104,7 +104,7 @@ Use `check_urls_locale` to flag URLs whose path contains a language-country
 segment (e.g. `/en-us/`), which usually shouldn't be hardcoded in docs:
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.3.0
+- uses: john0isaac/action-check-markdown@v1.4.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_urls_locale
@@ -121,14 +121,14 @@ Add one step (or job) per check to run several in the same workflow:
 steps:
   - uses: actions/checkout@v4
   - name: Check broken paths
-    uses: john0isaac/action-check-markdown@v1.3.0
+    uses: john0isaac/action-check-markdown@v1.4.0
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       command: check_broken_paths
       directory: ./
       guide-url: 'https://github.com/<owner>/<repo>/blob/main/CONTRIBUTING.md'
   - name: Check broken URLs
-    uses: john0isaac/action-check-markdown@v1.3.0
+    uses: john0isaac/action-check-markdown@v1.4.0
     with:
       github-token: ${{ secrets.GITHUB_TOKEN }}
       command: check_broken_urls
@@ -142,7 +142,7 @@ Use `directory` to point at a subfolder, and `extensions` to restrict which
 file types are checked (default `.md,.ipynb`):
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.3.0
+- uses: john0isaac/action-check-markdown@v1.4.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_broken_paths
@@ -166,7 +166,7 @@ that are skipped by default, pass a replacement list that omits them
 (e.g. `skip-files: 'CODE_OF_CONDUCT.md'` to stop skipping `SECURITY.md`).
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.3.0
+- uses: john0isaac/action-check-markdown@v1.4.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_broken_urls
@@ -184,7 +184,7 @@ need to tune concurrency and retry behavior to avoid tripping host rate
 limits:
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.3.0
+- uses: john0isaac/action-check-markdown@v1.4.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_broken_urls
@@ -206,7 +206,7 @@ Instead of repeating options on every step, set them once in a
 Use `isolated: true` to ignore configuration discovery entirely for a run:
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.3.0
+- uses: john0isaac/action-check-markdown@v1.4.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_broken_paths
@@ -222,7 +222,7 @@ written when errors are found (`markdown` when not set here or in
 `pyproject.toml`):
 
 ```yaml
-- uses: john0isaac/action-check-markdown@v1.3.0
+- uses: john0isaac/action-check-markdown@v1.4.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     command: check_broken_paths
